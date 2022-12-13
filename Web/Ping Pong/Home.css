@@ -1,0 +1,67 @@
+body {
+    zoom: 100%;
+    padding: 0px;
+
+}
+
+#Exit_button {
+    color: white;
+    background-color: red;
+    width: 50%;
+    font-family: 'Courier New', Courier, monospace
+}
+
+.how_to {
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    color: blueviolet;
+}
+
+#start {
+    font-size: 200%;
+    font-family: fantasy;
+}
+
+
+
+ol {
+    color: rgb(20, 231, 161);
+    font-family: monospace;
+}
+
+h3 {
+    font-size: 40px;
+    font-family:cursive;
+    color: aqua;
+    margin: 0%;
+}
+
+
+a {
+    color: white;
+    text-decoration: none;
+}
+
+button {
+    font-family: fantasy;
+    background-color: black;
+    font-size: 200%;
+
+}
+
+p {
+    color: white;
+    font-family: sans-serif;
+
+}
+
+em {
+    color: lightblue;
+}
+
+p.See_code {
+    color: brown;
+}
+
+#My_name {
+    color: yellowgreen;
+}
