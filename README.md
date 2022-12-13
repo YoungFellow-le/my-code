@@ -16,3 +16,7 @@ Usage: utils.sh [OPTIONS] [PARAMS]...
                                            - (https://github.com/WAClient/WALC)
 
 ```
+## Python folder
+This folder contains the `python` files I used to test what I learnt.
+## Web folder
+This folder contains the `HTML/JS` files I used to test what I learnt.
