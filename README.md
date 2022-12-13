@@ -2,7 +2,7 @@
 
 ## My `utils.sh` script:
 ```sh
-❯ ./utils.sh -h                                               
+❯ ./utils.sh
 Description: My custom utilities
 Usage: utils.sh [OPTIONS] [PARAMS]...
 
