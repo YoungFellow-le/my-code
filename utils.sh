@@ -22,6 +22,8 @@ help()
     echo "-c|--custom-res ${bold}H V OUTPUT${reset}          Set custom resolution to a display"
     echo "-m|--set-monitors                   Set the monitors to your default setup"
     echo "-p|--pid-shutdown ${bold}PID(s)${reset}            Shutdown the computer after a process exits"
+    echo "--update-walc ${bold}WALC_VERSION${reset}          Update the WALC AUR package to the new version"
+    echo "                                           - (https://github.com/WAClient/WALC)"
     echo ""
 
 }
@@ -109,6 +111,48 @@ shutdownAfterPid()
     done && shutdown -h now
 }
 
+updateWALC()
+{
+    #!/bin/bash
+
+    version=$1
+
+    # if [[ "$version" == "" ]]; then
+    #         echo "Wrong usage, correct usage:"
+    #         echo "$(basename "$0") package_version"
+    #         exit 1
+    # fi
+
+    cd /home/abdullah/01-Projects/WALC/aur/
+
+    printMessage "WALC PKGBUILD UPADATER"
+    sleep 0.5
+    printMessage "Downloading source file..."
+
+    wget "$(echo "https://github.com/WAClient/WALC/archive/refs/tags/v$version.tar.gz")"
+    file=v$version.tar.gz
+
+    sleep 0.5
+    printMessage "Generating MD5 sum..."
+    md5sum=$(md5sum "$file" | awk '{print $1;}')
+
+    sleep 0.5
+    printMessage "Updating PKGBUILD"
+    cat PKGBUILD_TEMPLATE | sed -e "s/put_version_number_over_here/$version/" -e "s/some-long-md5-hash/$md5sum/" > walc/PKGBUILD
+    cd walc
+    makepkg --printsrcinfo > .SRCINFO
+
+    printMessage "Committing Changes"
+    git add PKGBUILD .SRCINFO
+    git commit -m "Updating to version $version"
+
+    printMessage "Pushing Changes"
+    git push
+
+    printMessage "All done!"
+    cd
+}
+
 
 
 while :; do
@@ -124,9 +168,11 @@ while :; do
             else
                 echo "${red}ERROR:${reset} \"-s|--start-vm\" requires a ${bold}non-empty argument${reset}"
             fi
+            break
             ;;
         -r|--restart-plasma)
             restartPlasma
+            break
             ;;
         -c|--custom-res)
             if [ "$2" ] && [ "$3" ] && [ "$4" ]; then
@@ -138,14 +184,25 @@ while :; do
             ;;
         -m|--set-monitors)
             setMonitors
+            break
             ;;
         -p|--pid-shutdown)
             if [ "$2" ]; then
                 shift
                 shutdownAfterPid "$1"
             else
-                echo "${red}ERROR:${reset} \"-p|--pid-shutdown\" requires ${bold}3${reset} arguments"
+                echo "${red}ERROR:${reset} \"-s|--start-vm\" requires a ${bold}non-empty argument${reset}"
             fi
+            break
+            ;;
+        --update-walc)
+            if [ "$2" ]; then
+                shift
+                updateWALC "$1"
+            else
+                echo "${red}ERROR:${reset} \"--update-walc\" requires ${bold}an${reset} argument"
+            fi
+            break
             ;;
         --)
             shift
@@ -155,7 +212,7 @@ while :; do
             echo "${red}WARN:${reset} Unknown option (ignored): $1"
             ;;
         *)       
-            
+            help
             break
     esac
     shift
