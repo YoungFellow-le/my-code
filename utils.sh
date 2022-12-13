@@ -117,15 +117,7 @@ shutdownAfterPid()
 
 updateWALC()
 {
-    #!/bin/bash
-
     version=$1
-
-    # if [[ "$version" == "" ]]; then
-    #         echo "Wrong usage, correct usage:"
-    #         echo "$(basename "$0") package_version"
-    #         exit 1
-    # fi
 
     cd /home/abdullah/01-Projects/WALC/aur/
 
