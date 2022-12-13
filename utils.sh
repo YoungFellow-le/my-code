@@ -67,8 +67,8 @@ setMonitors()
 {
     printMessage "Setting your default screen resolution"
 
-    # xrandr -d :0 --output DP-1 --auto
-    # xrandr -d :0 --output DP-1-1 --auto
+    xrandr -d :0 --output DP-1 --auto
+    xrandr -d :0 --output DP-1-1 --auto
 
     MODE=$(optimus-manager --print-mode | cut -d " " -f 5)
 
