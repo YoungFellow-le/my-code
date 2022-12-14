@@ -42,24 +42,25 @@ if len(sys.argv) == 4:
                 print("Error: The provided IP address is not valid")
                 sys.exit()
     
-    # Check if the host is up
     
-    status = os.system(f"ping -c 1 {target} &> /dev/null")
-    if status != 0:
-        print("Error: The provided IP address is down")
-        sys.exit()
-        
     # Sanitize ports
     
     start_port = int(sys.argv[2])
     end_port = int(sys.argv[3])
-    
+        
     if end_port > 65535 or end_port < 1:
         print("Error: No such port exists!")
         sys.exit()
     
     if start_port > end_port or start_port < 1:
         print("Error: The start port is larger than end port!")
+        sys.exit()
+        
+    # Check if the host is up
+    
+    status = os.system(f"ping -c 1 {target} &> /dev/null")
+    if status != 0:
+        print("Error: The provided IP address is down")
         sys.exit()
 
 else:
