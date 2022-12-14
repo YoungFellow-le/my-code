@@ -9,9 +9,8 @@ import os
 import socket
 from datetime import datetime as dt
 
-# Define our target
 
-if len(sys.argv) == 2:
+if len(sys.argv) == 4:
     
     # Sanitize IP address
     
@@ -33,7 +32,8 @@ if len(sys.argv) == 2:
             sys.exit()
     else:
         if len(ip_array) != 4:
-            print("Provided IP address is not valid")
+            print("Error: Provided IP address is not valid")
+            sys.exit()
         
         # Make sure that the IP address is correctly formatted    
         
@@ -48,13 +48,24 @@ if len(sys.argv) == 2:
     if status != 0:
         print("Error: The provided IP address is down")
         sys.exit()
-    
-    
-    
         
+    # Sanitize ports
+    
+    start_port = int(sys.argv[2])
+    end_port = int(sys.argv[3])
+    
+    if end_port > 65535 or end_port < 1:
+        print("Error: No such port exists!")
+        sys.exit()
+    
+    if start_port > end_port or start_port < 1:
+        print("Error: The start port is larger than end port!")
+        sys.exit()
+
 else:
     print("Invalid amount of arguments!")
-    print("Correct syntax: python3 scanner.py <IP>")
+    print("Correct syntax: python3 scanner.py <IP> <START_PORT> <END_PORT>")
+    sys.exit()
 
 # Add a pretty banner
 
@@ -64,7 +75,7 @@ print(f"Time started: {str(dt.now())}")
 print("-" * 50)
 
 try:
-    for port in range(50, 85): # Port range
+    for port in range(start_port, (end_port + 1)): # Port range
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         socket.setdefaulttimeout(1) # Only wait for a second
         result = s.connect_ex((target, port)) # Connect, if port is open returns 1
@@ -75,6 +86,3 @@ try:
 except KeyboardInterrupt: # If we hit Ctrl+C
     print("\nExiting program.")
     sys.exit()
-    
-except socket.error:
-    print("Could not connect to server.")
