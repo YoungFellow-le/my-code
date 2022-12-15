@@ -24,7 +24,7 @@ if len(sys.argv) == 4:
         if letter.isalpha():
             contains_letters = True
     
-    if contains_letters:
+    if contains_letters: # Check if it's a hostname of IP address
         try:
             target = socket.gethostbyname(sys.argv[1])
         except socket.gaierror:
@@ -76,14 +76,18 @@ print(f"Time started: {str(dt.now())}")
 print("-" * 50)
 
 try:
-    for port in range(start_port, (end_port + 1)): # Port range
+    # Port range
+    for port in range(start_port, (end_port + 1)):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        socket.setdefaulttimeout(1) # Only wait for a second
-        result = s.connect_ex((target, port)) # Connect, if port is open returns 1
+        # Only wait for a second
+        socket.setdefaulttimeout(1)
+        # Connect, if port is open returns 1
+        result = s.connect_ex((target, port))
         if result == 0:
             print(f"Port {port} is open!")
         s.close()
 
-except KeyboardInterrupt: # If we hit Ctrl+C
+# If we hit Ctrl+C
+except KeyboardInterrupt:
     print("\nExiting program.")
     sys.exit()
