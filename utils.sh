@@ -14,16 +14,16 @@ reset=$'\e[0m'
 help() 
 {
     echo "Description: My custom utilities"
-    echo "Usage: ${yellow}$(basename "$0") OPTIONS [PARAMS]...${reset}"
+    echo "${bold}Usage:${reset} ${yellow}$(basename "$0") OPTIONS [PARAMS]...${reset}"
     echo ""
-    echo "-h|--help                           Show this help message"
-    echo "-s|--start-vm ${bold}VM_NAME${reset}               Start virtual machine"
-    echo "-r|--restart-plasma                 Restart KDE Plasma desktop"
-    echo "-c|--custom-res ${bold}H V OUTPUT${reset}          Set custom resolution to a display"
-    echo "-m|--set-monitors                   Set the monitors to your default setup"
-    echo "-p|--pid-shutdown ${bold}PID(s)${reset}            Shutdown the computer after a process exits"
-    echo "--update-walc ${bold}WALC_VERSION${reset}          Update the WALC AUR package to the new version"
-    echo "                                           - (https://github.com/WAClient/WALC)"
+    echo "-h|--help                                      Show this help message"
+    echo "-s|--start-vm ${bold}VM_NAME${reset}                          Start virtual machine"
+    echo "-r|--restart-plasma                            Restart KDE Plasma desktop"
+    echo "-c|--custom-res ${bold}H V OUTPUT${reset}                     Set custom resolution to a display"
+    echo "-m|--set-monitors                              Set the monitors to your default setup"
+    echo "-p|--pid-shutdown ${bold}PID(s)${reset}                       Shutdown the computer after a process exits"
+    echo "--update-walc ${bold}WALC_VERSION COMMIT_MSG${reset}          Update the WALC AUR package to the new version"
+    echo "                                                      - (${blue}https://github.com/WAClient/WALC${reset})"
     echo ""
 
 }
@@ -99,7 +99,7 @@ setMonitors()
             xrandr --output eDP-1-1 --primary --mode "$primary_mode" --output HDMI-1-1 --off
         else 
             [[ $(xrandr -d :0 | grep "$primary_mode") == "" ]] && xrandr --addmode eDP-1 "$primary_mode"
-            xrandr --output eDP-1 --primary --mode "$primary_mode" --output HDMI-1 --off
+            xrandr --output eDP-1 --primaryk --mode "$primary_mode" --output HDMI-1 --off
         fi
     fi
 }
@@ -122,7 +122,7 @@ updateWALC()
     sleep 0.5
     printMessage "Downloading source file..."
 
-    wget "$(echo "https://github.com/WAClient/WALC/archive/refs/tags/v$version.tar.gz")"
+    wget "https://github.com/WAClient/WALC/archive/refs/tags/v$version.tar.gz"
     file=v$version.tar.gz
 
     sleep 0.5
@@ -137,7 +137,7 @@ updateWALC()
 
     printMessage "Committing Changes"
     git add PKGBUILD .SRCINFO
-    git commit -m "Updating to version $version"
+    git commit -m "$2"
 
     printMessage "Pushing Changes"
     git push
@@ -190,11 +190,11 @@ while :; do
             break
             ;;
         --update-walc)
-            if [ "$2" ]; then
+            if [ "$2" ] && [ "$3" ]; then
                 shift
-                updateWALC "$1"
+                updateWALC "$1" "$3"
             else
-                echo "${red}ERROR:${reset} \"--update-walc\" requires ${bold}an${reset} argument"
+                echo "${red}ERROR:${reset} \"--update-walc\" requires ${bold}2${reset} arguments"
             fi
             break
             ;;
