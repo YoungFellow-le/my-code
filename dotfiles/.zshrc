@@ -25,5 +25,5 @@ alias grep="grep --colour"
 alias ip="ip -c"
 alias updatewalc="/home/abdullah/01-Projects/WALC/aur/update_walc.sh"
 alias YoungFellow="echo \"Abdullah A.\""
-alias c='xclip'
+alias c='xclip -selection clipboard'
 alias v='xclip -o'
