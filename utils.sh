@@ -21,7 +21,7 @@ help()
     echo "-r|--restart-plasma                            Restart KDE Plasma desktop"
     echo "-c|--custom-res ${bold}H V OUTPUT${reset}                     Set custom resolution to a display"
     echo "-m|--set-monitors                              Set the monitors to your default setup"
-    echo "-p|--pid-shutdown ${bold}PID(s)${reset}                       Shutdown the computer after a process exits"
+    echo "-p|--pid-command ${bold}PID(s) COMMAND${reset}                Run a command after a process exits"
     echo "--update-walc ${bold}WALC_VERSION COMMIT_MSG${reset}          Update the WALC AUR package to the new version"
     echo "                                                      - (${blue}https://github.com/WAClient/WALC${reset})"
     echo ""
@@ -104,12 +104,12 @@ setMonitors()
     fi
 }
 
-shutdownAfterPid()
+runAfterPid()
 {
-    printMessage "Will shutdown after pid $1 exits"
+    printMessage "Will run command ($2) after pid $1 exits"
     while [[ $(ps "$1" &> /dev/null)$? -eq 0 ]]; do
         sleep 2
-    done && shutdown -h now
+    done && $2
 }
 
 updateWALC()
@@ -180,12 +180,21 @@ while :; do
             setMonitors
             break
             ;;
-        -p|--pid-shutdown)
-            if [ "$2" ]; then
+        -p|--pid-command)
+            if [ "$2" ] && [ "$3" ]; then
                 shift
-                shutdownAfterPid "$1"
+                PID="$1"
+
+                if ! ps -p "$PID" &> /dev/null; then
+                    echo "${red}ERROR:${reset} provided PID does not exist!"
+                    exit
+                fi
+
+                shift
+                COMMAND="$*"
+                runAfterPid "$PID" "$COMMAND"
             else
-                echo "${red}ERROR:${reset} \"-s|--start-vm\" requires a ${bold}non-empty argument${reset}"
+                echo "${red}ERROR:${reset} \"-s|--pid-command\" requires 2 ${bold}non-empty arguments${reset}"
             fi
             break
             ;;
