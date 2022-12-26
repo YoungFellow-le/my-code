@@ -65,6 +65,9 @@ setCustomRes()
 
 setMonitors()
 {
+    xrandr --output DP-1 --auto
+    xrandr --ouput DP-1-1 --auto
+
     printMessage "Setting your default screen resolution"
 
     MODE=$(optimus-manager --print-mode | cut -d " " -f 5)
@@ -99,7 +102,7 @@ setMonitors()
             xrandr --output eDP-1-1 --primary --mode "$primary_mode" --output HDMI-1-1 --off
         else 
             [[ $(xrandr -d :0 | grep "$primary_mode") == "" ]] && xrandr --addmode eDP-1 "$primary_mode"
-            xrandr --output eDP-1 --primaryk --mode "$primary_mode" --output HDMI-1 --off
+            xrandr --output eDP-1 --primary --mode "$primary_mode" --output HDMI-1 --off
         fi
     fi
 }
