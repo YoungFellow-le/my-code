@@ -1,15 +1,16 @@
 #!/bin/bash
 
 red=$'\e[1;31m'
-green=$'\e[1;32m'
 blue=$'\e[1;34m'
-magenta=$'\e[1;35m'
-cyan=$'\e[1;36m'
 yellow=$'\e[1;93m'
-white=$'\e[0m'
 bold=$'\e[1m'
-norm=$'\e[21m'
 reset=$'\e[0m'
+
+magenta=$'\e[1;35m'
+green=$'\e[1;32m'
+cyan=$'\e[1;36m'
+white=$'\e[0m'
+norm=$'\e[21m'
 
 help() 
 {
@@ -66,43 +67,47 @@ setCustomRes()
 setMonitors()
 {
     xrandr --output DP-1 --auto
-    xrandr --ouput DP-1-1 --auto
+    xrandr --output DP-1-1 --auto
 
     printMessage "Setting your default screen resolution"
 
-    MODE=$(optimus-manager --print-mode | cut -d " " -f 5)
+    graphics_mode=$(optimus-manager --print-mode | cut -d " " -f 5)
 
     CVT=$(cvt 1920 1080 | tail -1 | cut -d ' ' -f2-)
     secondary_mode=$(echo "$CVT" | cut -d ' ' -f1)
     secondary_connected=$(xrandr --listactivemonitors | grep ' DP-1')
 
-    if [[ $(xrandr -d :0 | grep "$secondary_mode") == "" ]]; then xrandr --newmode "$CVT"; fi
+    [[ $(xrandr -d :0 | grep "$secondary_mode") == "" ]] && xrandr --newmode $(echo $CVT)
 
     CVT2=$(cvt 1600 900 | tail -1 | cut -d ' ' -f2-)
     primary_mode=$(echo "$CVT2" | cut -d ' ' -f1)
-    [[ $(xrandr -d :0 | grep "$primary_mode") == "" ]] && xrandr --newmode "$CVT2"
+    [[ $(xrandr -d :0 | grep "$primary_mode") == "" ]] && xrandr --newmode $(echo $CVT2)
+
+    # Debug:
+    # echo "Primary mode: $primary_mode"
+    # echo "Secondary mode: $secondary_mode"
 
     if [[ $secondary_connected != "" ]]
     then
-        if [[ $MODE == "nvidia" ]]
+        if [[ $graphics_mode == "nvidia" ]]
         then
-            [[ $(xrandr -d :0 | grep "$secondary_mode") == "" ]] && xrandr --addmode DP-1-1 "$secondary_mode"
-            [[ $(xrandr -d :0 | grep "$primary_mode") == "" ]] && xrandr --addmode eDP-1-1 "$primary_mode"
-            xrandr --output eDP-1-1 --primary --mode "$primary_mode" --pos 0x180 --output HDMI-1-1 --off --output DP-1-1 --pos 1600x0 --mode "$secondary_mode"
+            [[ $(xrandr -d :0 | grep "$secondary_mode") == "" ]] && xrandr --addmode DP-1-1 $secondary_mode
+            [[ $(xrandr -d :0 | grep "$primary_mode") == "" ]] && xrandr --addmode eDP-1-1 $primary_mode
+            xrandr --output eDP-1-1 --primary --mode $primary_mode --pos 0x180 --output HDMI-1-1 --off --output DP-1-1 --pos 1600x0 --mode $secondary_mode
         else 
-            [[ $(xrandr -d :0 | grep "$secondary_mode") == "" ]] && xrandr --addmode DP-1 "$secondary_mode"
-            [[ $(xrandr -d :0 | grep "$primary_mode") == "" ]] && xrandr --addmode eDP-1 "$primary_mode"
-            xrandr --output eDP-1 --primary --mode "$primary_mode" --pos 0x180 --output HDMI-1 --off --output DP-1 --pos 1600x0 --mode "$secondary_mode"
+            [[ $(xrandr -d :0 | grep "$secondary_mode") == "" ]] && xrandr --addmode DP-1 $secondary_mode
+            [[ $(xrandr -d :0 | grep "$primary_mode") == "" ]] && xrandr --addmode eDP-1 $primary_mode
+            xrandr --output eDP-1 --primary --mode $primary_mode --pos 0x180 --output HDMI-1 --off --output DP-1 --pos 1600x0 --mode $secondary_mode
         fi
 
     else
-        if [[ $MODE == "nvidia" ]]
+        if [[ $graphics_mode == "nvidia" ]]
         then
-            [[ $(xrandr -d :0 | grep "$primary_mode") == "" ]] && xrandr --addmode eDP-1-1 "$primary_mode"
-            xrandr --output eDP-1-1 --primary --mode "$primary_mode" --output HDMI-1-1 --off
+            [[ $(xrandr -d :0 | grep "$primary_mode") == "" ]] && xrandr --addmode eDP-1-1 $primary_mode
+            xrandr --output eDP-1-1 --primary --mode $primary_mode --output HDMI-1-1 --off
         else 
-            [[ $(xrandr -d :0 | grep "$primary_mode") == "" ]] && xrandr --addmode eDP-1 "$primary_mode"
-            xrandr --output eDP-1 --primary --mode "$primary_mode" --output HDMI-1 --off
+            [[ $(xrandr -d :0 | grep "$primary_mode") == "" ]] && xrandr --addmode eDP-1 $primary_mode
+            xrandr --output eDP-1 --primary --mode $primary_mode --output HDMI-1 --off
         fi
     fi
 }
