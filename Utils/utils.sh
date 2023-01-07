@@ -1,0 +1,243 @@
+#!/bin/bash
+
+red=$'\e[1;31m'
+blue=$'\e[1;34m'
+yellow=$'\e[1;93m'
+bold=$'\e[1m'
+reset=$'\e[0m'
+
+magenta=$'\e[1;35m'
+green=$'\e[1;32m'
+cyan=$'\e[1;36m'
+white=$'\e[0m'
+norm=$'\e[21m'
+
+real_pwd=$(realpath "$0" | sed -e "s@utils.sh@@g")
+
+help() 
+{ 
+    echo "Description: My custom utilities"
+    echo "${bold}Usage:${reset} ${yellow}$(basename "$0") OPTIONS [PARAMS]...${reset}"
+    echo ""
+    echo "-h|--help                                      Show this help message"
+    echo "-s|--start-vm ${bold}VM_NAME${reset}                          Start virtual machine"
+    echo "-r|--restart-plasma                            Restart KDE Plasma desktop"
+    echo "-c|--custom-res ${bold}H V OUTPUT${reset}                     Set custom resolution to a display"
+    echo "-m|--set-monitors                              Set the monitors to your default setup"
+    echo "-p|--pid-command ${bold}PID(s) COMMAND${reset}                Run a command after a process exits"
+    echo "--update-walc ${bold}WALC_VERSION COMMIT_MSG${reset}          Update the WALC AUR package to the new version"
+    echo "                                                      - (${blue}https://github.com/WAClient/WALC${reset})"
+    echo ""
+
+}
+
+printMessage() 
+{
+    echo -e "\n    ${yellow}[+]${reset}${bold} $1${reset} \n"
+}
+
+
+restartPlasma() 
+{
+    printMessage "Restarting Plasma Desktop"
+    kquitapp5 plasmashell
+    kstart5 plasmashell&
+}
+
+startVM()
+{
+    printMessage "Starting VM: $1"
+    virsh --connect qemu:///system start "$1"
+    virt-manager --connect qemu:///system --show-domain-console "$1"
+}
+
+setCustomRes() 
+{
+    printMessage "Setting custom resolution of $1x$2 to output $3"
+
+    CVT=$(cvt "$1" "$2" | tail -1 | cut -d ' ' -f2-)
+    MODE=$(echo "$CVT" | cut -d ' ' -f1)
+    
+    if [[ $(xrandr -d :0 | grep "$MODE") == "" ]]; then
+        xrandr --newmode "$CVT"
+        xrandr --addmode "$3" "$MODE"
+    fi
+    
+    xrandr --output "$3" --mode "$MODE"
+}
+
+setMonitors()
+{
+    xrandr --output DP-1 --auto &> /dev/null
+    xrandr --output DP-1-1 --auto &> /dev/null
+
+    printMessage "Setting your default screen resolution"
+    
+    graphics_mode="$(optimus-manager --print-mode | cut -d " " -f 5)"
+    primary_set="$(python3 "$real_pwd/display_check.py" primary)"
+    secondary_set="$(python3 "$real_pwd/display_check.py" secondary)"
+
+    CVT=$(cvt 1920 1080 | tail -1 | cut -d ' ' -f2-)
+    secondary_mode=$(echo "$CVT" | cut -d ' ' -f1)
+    secondary_connected=$(xrandr --listactivemonitors | grep ' DP-1')
+    [[ $secondary_set = "False" ]] && xrandr --newmode $(echo $CVT)
+
+    CVT2=$(cvt 1600 900 | tail -1 | cut -d ' ' -f2-)
+    primary_mode=$(echo "$CVT2" | cut -d ' ' -f1)
+    [[ $primary_set == "False" ]] && xrandr --newmode $(echo $CVT2)
+
+    # Debug:
+    # echo "Primary mode: $primary_mode"
+    # echo "Secondary mode: $secondary_mode"
+
+    if [[ $secondary_connected != "" ]]
+    then
+        if [[ $graphics_mode == "nvidia" ]]
+        then
+            [[ $secondary_set = "False" ]] && xrandr --addmode DP-1-1 $secondary_mode
+            [[ $primary_set = "False" ]] && xrandr --addmode eDP-1-1 $primary_mode
+            xrandr --output eDP-1-1 --primary --mode $primary_mode --pos 0x180 --output DP-1-1 --pos 1600x0 --mode $secondary_mode
+        else 
+            [[ $secondary_set = "False" ]] && xrandr --addmode DP-1 $secondary_mode
+            [[ $primary_set = "False" ]] && xrandr --addmode eDP-1 $primary_mode
+            xrandr --output eDP-1 --primary --mode $primary_mode --pos 0x180 --output DP-1 --pos 1600x0 --mode $secondary_mode
+        fi
+
+    else
+        if [[ $graphics_mode == "nvidia" ]]
+        then
+            [[ $primary_set = "False" ]] && xrandr --addmode eDP-1-1 $primary_mode
+            xrandr --output eDP-1-1 --primary --mode $primary_mode
+        else 
+            [[ $primary_set = "False" ]] && xrandr --addmode eDP-1 $primary_mode
+            xrandr --output eDP-1 --primary --mode $primary_mode
+        fi
+    fi
+}
+
+runAfterPid()
+{
+    printMessage "Will run command ($2) after pid $1 exits"
+    while [[ $(ps "$1" &> /dev/null)$? -eq 0 ]]; do
+        sleep 2
+    done && $2
+}
+
+updateWALC()
+{
+    version=$1
+
+    cd /home/abdullah/01-Projects/WALC/aur/
+
+    printMessage "WALC PKGBUILD UPADATER"
+    sleep 0.5
+    printMessage "Downloading source file..."
+
+    wget "https://github.com/WAClient/WALC/archive/refs/tags/v$version.tar.gz"
+    file=v$version.tar.gz
+
+    sleep 0.5
+    printMessage "Generating MD5 sum..."
+    md5sum=$(md5sum "$file" | awk '{print $1;}')
+
+    sleep 0.5
+    printMessage "Updating PKGBUILD"
+    cat PKGBUILD_TEMPLATE | sed -e "s/put_version_number_over_here/$version/" -e "s/some-long-md5-hash/$md5sum/" > walc/PKGBUILD
+    cd walc
+    makepkg --printsrcinfo > .SRCINFO
+
+    printMessage "Committing Changes"
+    git add PKGBUILD .SRCINFO
+    git commit -m "$2"
+
+    printMessage "Pushing Changes"
+    git push
+
+    printMessage "All done!"
+    cd
+}
+
+
+
+while :; do
+    case $1 in
+        -h|--help)
+            help
+            exit
+            ;;
+        -s|--start-vm)
+            if [ "$2" ]; then
+                shift
+                startVM "$1"
+            else
+                echo "${red}ERROR:${reset} \"-s|--start-vm\" requires a ${bold}non-empty argument${reset}"
+            fi
+            break
+            ;;
+        -r|--restart-plasma)
+            restartPlasma
+            break
+            ;;
+        -c|--custom-res)
+            if [ "$2" ] && [ "$3" ] && [ "$4" ]; then
+                shift
+                setCustomRes "$1" "$2" "$3"
+            else
+                echo "${red}ERROR:${reset} \"-c|--custom-res\" requires ${bold}3${reset} arguments"
+            fi
+            break
+            ;;
+        -m|--set-monitors)
+            setMonitors
+            break
+            ;;
+        -p|--pid-command)
+            if [ "$2" ] && [ "$3" ]; then
+                shift
+                PID="$1"
+
+                if ! ps -p "$PID" &> /dev/null; then
+                    echo "${red}ERROR:${reset} provided PID does not exist!"
+                    exit
+                fi
+
+                shift
+                COMMAND="$*"
+                runAfterPid "$PID" "$COMMAND"
+            else
+                echo "${red}ERROR:${reset} \"-s|--pid-command\" requires 2 ${bold}non-empty arguments${reset}"
+            fi
+            break
+            ;;
+        --update-walc)
+            if [ "$2" ] && [ "$3" ]; then
+                shift
+                updateWALC "$1" "$3"
+            else
+                echo "${red}ERROR:${reset} \"--update-walc\" requires ${bold}2${reset} arguments"
+            fi
+            break
+            ;;
+        --)
+            shift
+            break
+            ;;
+        -?*)
+            echo "${red}WARN:${reset} Unknown option (ignored): $1"
+            ;;
+        *)       
+            help
+            break
+    esac
+    shift
+done
+
+
+
+# Might use this one day:
+# --file=?*)
+    #     file=${1#*=} # Delete everything up to "=" and assign the remainder.
+    #     ;;
+# -v|--verbose)
+#             verbose=$((verbose + 1))  # Each -v adds 1 to verbosity.
+#             ;;
