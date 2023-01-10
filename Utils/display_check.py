@@ -5,10 +5,13 @@ from Xlib.ext import randr
 from sys import argv as a
 
 # Make sure that params are correct
-if not (len(a) == 2 and (a[1].lower() == "primary" or a[1].lower() == "secondary")):
+if len(a) != 3:
     print("ERROR: Invalid usage")
-    print(f"Correct usage: {a[0]} primary|secondary")
+    print(f"Correct usage: {a[0]} OutputName HxV")
     exit()
+
+output = a[1]
+res_to_set = a[2]
 
 # Get all the modes
 def find_mode(id, modes):
@@ -43,17 +46,22 @@ def get_display_info():
 
     return result
 
+outputs = get_display_info()
 
-monitor = 0 if a[1].lower() == "primary" else 1
-modes = get_display_info()[monitor].get('available_resolutions')
-_set = False
+monitor = ''
 
-if monitor == 0:
-    res_to_set = "1600x900"
-elif monitor == 1:
-    res_to_set = "1920x1080"
-    
-if res_to_set in modes:
-    _set = True
+for dev in range(0, len(outputs)):
+     if outputs[dev].get('name').lower() == a[1].lower():
+         monitor = dev
 
-print(_set)
+if monitor == '':
+    print("ERROR: Output is not active!")
+else:
+    dev_modes = outputs[monitor].get('available_resolutions')
+
+    _set = False
+        
+    if res_to_set in dev_modes:
+        _set = True
+
+    print(_set)

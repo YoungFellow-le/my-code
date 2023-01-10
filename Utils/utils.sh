@@ -55,64 +55,65 @@ setCustomRes()
 {
     printMessage "Setting custom resolution of $1x$2 to output $3"
 
-    CVT=$(cvt "$1" "$2" | tail -1 | cut -d ' ' -f2-)
+    H=$1
+    V=$2
+    RES="$1x$2"
+    OUTPUT=$3
+    CVT=$(echo \"$RES\" $(cvt "$H" "$V" | tail -1 | cut -d ' ' -f3-))
     MODE=$(echo "$CVT" | cut -d ' ' -f1)
-    
-    if [[ $(xrandr -d :0 | grep "$MODE") == "" ]]; then
-        xrandr --newmode "$CVT"
-        xrandr --addmode "$3" "$MODE"
+    STATUS=$(python3 "$real_pwd/display_check.py" "$OUTPUT" "$RES")
+    if [[ $STATUS = "False" ]]; then
+        xrandr --newmode $CVT
+        xrandr --addmode "$OUTPUT" "$MODE"
+    elif [[ ! $STATUS = "True" ]]; then
+        echo "${red}ERROR:${reset} Output $OUTPUT is not active!"
+        exit 1
     fi
+
+    echo "MODE: $MODE"
     
-    xrandr --output "$3" --mode "$MODE"
+    xrandr --output "$OUTPUT" --mode "$MODE"
 }
 
 setMonitors()
 {
-    xrandr --output DP-1 --auto &> /dev/null
-    xrandr --output DP-1-1 --auto &> /dev/null
+    graphics_mode="$(optimus-manager --print-mode | cut -d " " -f5)"
+    if [[ $graphics_mode = "nvidia" ]]; then
+        primary_output="eDP-1-1"
+        secondary_output="DP-1-1"
+    else
+        primary_output="eDP-1"
+        secondary_output="DP-1"
+    fi
 
     printMessage "Setting your default screen resolution"
     
-    graphics_mode="$(optimus-manager --print-mode | cut -d " " -f 5)"
-    primary_set="$(python3 "$real_pwd/display_check.py" primary)"
-    secondary_set="$(python3 "$real_pwd/display_check.py" secondary)"
+    ##### Primary Screen #####
+    
+    primary_mode="1600x900"
+    primary_set="$(python3 "$real_pwd/display_check.py" $primary_output $primary_mode)"
+    primary_cvt=$(echo "$primary_mode  $(cvt 1600 900 | tail -1 | cut -d ' ' -f3-)")
+    
+    [[ $primary_set = "False" ]] && xrandr --newmode $(echo $primary_cvt); xrandr --addmode $primary_output $primary_mode
+    xrandr --output $primary_output --primary --mode $primary_mode
+    
+    ##### External Monitor #####
 
-    CVT=$(cvt 1920 1080 | tail -1 | cut -d ' ' -f2-)
-    secondary_mode=$(echo "$CVT" | cut -d ' ' -f1)
-    secondary_connected=$(xrandr --listactivemonitors | grep ' DP-1')
-    [[ $secondary_set = "False" ]] && xrandr --newmode $(echo $CVT)
+    xrandr --output $secondary_output --auto
 
-    CVT2=$(cvt 1600 900 | tail -1 | cut -d ' ' -f2-)
-    primary_mode=$(echo "$CVT2" | cut -d ' ' -f1)
-    [[ $primary_set == "False" ]] && xrandr --newmode $(echo $CVT2)
+    secondary_mode="1920x1080"
+    secondary_set="$(python3 "$real_pwd/display_check.py" $secondary_output $secondary_mode)"
+    secondary_connected=$(xrandr --listactivemonitors | grep " $secondary_output")
+    
+    if [[ $secondary_connected != "" ]]; then
+        secondary_cvt=$(echo "$secondary_mode  $(cvt 1920 1080 | tail -1 | cut -d ' ' -f3-)")
+        [[ $secondary_set = "False" ]] && xrandr --newmode $(echo $secondary_cvt); xrandr --addmode $secondary_output $secondary_mode
+        xrandr --output $secondary_output --mode $secondary_mode --right-of $primary_output
+    fi
 
     # Debug:
     # echo "Primary mode: $primary_mode"
     # echo "Secondary mode: $secondary_mode"
-
-    if [[ $secondary_connected != "" ]]
-    then
-        if [[ $graphics_mode == "nvidia" ]]
-        then
-            [[ $secondary_set = "False" ]] && xrandr --addmode DP-1-1 $secondary_mode
-            [[ $primary_set = "False" ]] && xrandr --addmode eDP-1-1 $primary_mode
-            xrandr --output eDP-1-1 --primary --mode $primary_mode --pos 0x180 --output DP-1-1 --pos 1600x0 --mode $secondary_mode
-        else 
-            [[ $secondary_set = "False" ]] && xrandr --addmode DP-1 $secondary_mode
-            [[ $primary_set = "False" ]] && xrandr --addmode eDP-1 $primary_mode
-            xrandr --output eDP-1 --primary --mode $primary_mode --pos 0x180 --output DP-1 --pos 1600x0 --mode $secondary_mode
-        fi
-
-    else
-        if [[ $graphics_mode == "nvidia" ]]
-        then
-            [[ $primary_set = "False" ]] && xrandr --addmode eDP-1-1 $primary_mode
-            xrandr --output eDP-1-1 --primary --mode $primary_mode
-        else 
-            [[ $primary_set = "False" ]] && xrandr --addmode eDP-1 $primary_mode
-            xrandr --output eDP-1 --primary --mode $primary_mode
-        fi
-    fi
 }
 
 runAfterPid()
