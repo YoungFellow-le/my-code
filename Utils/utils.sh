@@ -22,7 +22,7 @@ help()
     echo "-h|--help                                      Show this help message"
     echo "-s|--start-vm ${bold}VM_NAME${reset}                          Start virtual machine"
     echo "-r|--restart-plasma                            Restart KDE Plasma desktop"
-    echo "-c|--custom-res ${bold}H V OUTPUT${reset}                     Set custom resolution to a display"
+    echo "-c|--custom-res ${bold}H V OUTPUT [XRANDR FLAGS]${reset}      Set custom resolution to a display"
     echo "-m|--set-monitors                              Set the monitors to your default setup"
     echo "-p|--pid-command ${bold}PID(s) COMMAND${reset}                Run a command after a process exits"
     echo "--update-walc ${bold}WALC_VERSION COMMIT_MSG${reset}          Update the WALC AUR package to the new version"
@@ -53,26 +53,25 @@ startVM()
 
 setCustomRes() 
 {
-    printMessage "Setting custom resolution of $1x$2 to output $3"
+    printMessage "Setting custom resolution of $1x$2 to output $3 $([[ "$4" ]] && echo "with flags: $4")"
 
     H=$1
     V=$2
     RES="$1x$2"
     OUTPUT=$3
-    CVT=$(echo \"$RES\" $(cvt "$H" "$V" | tail -1 | cut -d ' ' -f3-))
-    MODE=$(echo "$CVT" | cut -d ' ' -f1)
+    FLAGS=$4
+    CVT=$(echo $RES $(cvt "$H" "$V" | tail -1 | cut -d ' ' -f3-))
+    MODE=$(echo $CVT | cut -d ' ' -f1)
     STATUS=$(python3 "$real_pwd/display_check.py" "$OUTPUT" "$RES")
     if [[ $STATUS = "False" ]]; then
-        xrandr --newmode $CVT
+        xrandr --newmode $(echo $CVT)
         xrandr --addmode "$OUTPUT" "$MODE"
     elif [[ ! $STATUS = "True" ]]; then
         echo "${red}ERROR:${reset} Output $OUTPUT is not active!"
         exit 1
     fi
-
-    echo "MODE: $MODE"
     
-    xrandr --output "$OUTPUT" --mode "$MODE"
+    xrandr --output "$OUTPUT" --mode "$MODE" $(echo $FLAGS)
 }
 
 setMonitors()
@@ -182,9 +181,9 @@ while :; do
         -c|--custom-res)
             if [ "$2" ] && [ "$3" ] && [ "$4" ]; then
                 shift
-                setCustomRes "$1" "$2" "$3"
+                setCustomRes "$1" "$2" "$3" "$4"
             else
-                echo "${red}ERROR:${reset} \"-c|--custom-res\" requires ${bold}3${reset} arguments"
+                echo "${red}ERROR:${reset} \"-c|--custom-res\" requires at least ${bold}3${reset} arguments"
             fi
             break
             ;;
